@@ -32,7 +32,7 @@ const Sidebar = ({ width }: SidebarProps) => {
   if (isUsersLoading) return <SidebarSkeleton />;
 
   return (
-    <aside style={{ width }} className="h-full shrink-0 flex flex-col">
+    <aside className="h-full w-full shrink-0 flex flex-col">
       <div className="border-b border-base-300 w-full p-5">
         <div className="flex items-center gap-2">
           <Users className="size-5 shrink-0" />
