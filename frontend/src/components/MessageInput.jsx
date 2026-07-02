@@ -2,14 +2,15 @@ import { useRef, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { Image, Send, X } from "lucide-react";
 import toast from "react-hot-toast";
+import imageCompression from "browser-image-compression";
 
 const MessageInput = () => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
-  const { sendMessage } = useChatStore();
+  const { sendMessage , isSendingMessage } = useChatStore();
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
@@ -18,12 +19,20 @@ const MessageInput = () => {
 
     console.log(file);
 
+    const options = {
+      maxSizeMB: 0.001, // Target size is 2KB (2 / 1024 MB)
+      maxWidthOrHeight: 800, // Limit dimensions to 800px
+      useWebWorker: true,
+    };
+
+    const compressedFile = await imageCompression(file, options);
+
     const reader = new FileReader();
     reader.onloadend = () => {
       setImagePreview(reader.result);
       console.log(reader.result);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(compressedFile);
   };
 
   const removeImage = () => {
@@ -71,12 +80,12 @@ const MessageInput = () => {
         </div>
       )}
 
-      <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+      <form onSubmit={handleSendMessage} disabled={isSendingMessage} className="flex items-center gap-2">
         <div className="flex-1 flex gap-2">
           <input
             type="text"
             className="w-full input input-bordered rounded-lg input-sm sm:input-md"
-            placeholder="Type a message..."
+            placeholder={`${isSendingMessage? "Sending message..." : "Type a message..." }`}
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
@@ -100,7 +109,7 @@ const MessageInput = () => {
         <button
           type="submit"
           className="btn btn-sm btn-circle"
-          disabled={!text.trim() && !imagePreview}
+          disabled={(!text.trim() && !imagePreview) || isSendingMessage}
         >
           <Send size={22} />
         </button>
