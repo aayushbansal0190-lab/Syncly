@@ -527,21 +527,23 @@ const ChatContainer = () => {
                 editingId !== message._id && (
                   <div className="absolute -top-3 right-1 hidden group-hover:flex gap-1">
                     {message.text && (
+                      <div className="tooltip tooltip-bottom" data-tip="Edit">
+                        <button
+                          className="btn btn-xs btn-circle"
+                          onClick={() => startEdit(message)}
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+                    <div className="tooltip tooltip-bottom" data-tip="Delete">
                       <button
                         className="btn btn-xs btn-circle"
-                        onClick={() => startEdit(message)}
-                        title="Edit"
+                        onClick={() => handleDelete(message._id)}
                       >
-                        <Pencil className="w-3 h-3" />
+                        <Trash2 className="w-3 h-3" />
                       </button>
-                    )}
-                    <button
-                      className="btn btn-xs btn-circle"
-                      onClick={() => handleDelete(message._id)}
-                      title="Delete"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+                    </div>
                   </div>
                 )}
             </div>

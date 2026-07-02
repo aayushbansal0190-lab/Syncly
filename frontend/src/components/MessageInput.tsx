@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
-import { Image, Send, X, Paperclip, FileText, Smile, Mic, Square } from "lucide-react";
+import { Send, X, Paperclip, FileText, Smile, Mic, Square } from "lucide-react";
 import toast from "react-hot-toast";
 import imageCompression from "browser-image-compression";
 
@@ -44,8 +44,7 @@ const MessageInput = () => {
   const [showEmoji, setShowEmoji] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const docInputRef = useRef<HTMLInputElement>(null);
+  const attachInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -91,6 +90,16 @@ const MessageInput = () => {
       setFilePreview({ data: reader.result as string, name: file.name, type: mime, size: file.size });
     };
     reader.readAsDataURL(typedBlob);
+  };
+
+  // One attachment button for both images and documents (saves space and works
+  // on mobile). Route by MIME: images get compressed + previewed; everything
+  // else goes through the document path (type allowlist + size check).
+  const handleAttachChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type.startsWith("image/")) handleImageChange(e);
+    else handleFileChange(e);
   };
 
   // ===== Voice recording (browser MediaRecorder) =====
@@ -152,12 +161,12 @@ const MessageInput = () => {
 
   const removeImage = () => {
     setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (attachInputRef.current) attachInputRef.current.value = "";
   };
 
   const removeFile = () => {
     setFilePreview(null);
-    if (docInputRef.current) docInputRef.current.value = "";
+    if (attachInputRef.current) attachInputRef.current.value = "";
   };
 
   const insertEmoji = (emoji: string) => setText((prev) => prev + emoji);
@@ -173,8 +182,7 @@ const MessageInput = () => {
       setImagePreview(null);
       setFilePreview(null);
       setShowEmoji(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      if (docInputRef.current) docInputRef.current.value = "";
+      if (attachInputRef.current) attachInputRef.current.value = "";
     } catch (error) {
       console.error("Failed to send message:", error);
     }
@@ -243,7 +251,7 @@ const MessageInput = () => {
       )}
 
       <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-        <div className="flex-1 flex gap-2">
+        <div className="flex-1 flex items-center gap-2">
           {isRecording ? (
             // While recording, replace the text field with a live recording bar.
             <div className="flex-1 flex items-center gap-2 input input-bordered input-sm sm:input-md">
@@ -261,57 +269,66 @@ const MessageInput = () => {
             />
           )}
 
-          <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageChange} />
-          <input type="file" accept={FILE_ACCEPT} className="hidden" ref={docInputRef} onChange={handleFileChange} />
+          <input
+            type="file"
+            accept={`image/*,${FILE_ACCEPT}`}
+            className="hidden"
+            ref={attachInputRef}
+            onChange={handleAttachChange}
+          />
 
           {/* Emoji */}
-          <button
-            type="button"
-            className={`hidden sm:flex btn btn-circle ${showEmoji ? "text-primary" : "text-base-content/60"}`}
-            onClick={() => setShowEmoji((s) => !s)}
-            disabled={isSendingMessage || isRecording}
-            title="Emoji"
-          >
-            <Smile size={20} />
-          </button>
+          <div className="tooltip tooltip-top hidden sm:block" data-tip="Emoji">
+            <button
+              type="button"
+              className={`btn btn-circle ${showEmoji ? "text-primary" : "text-base-content/60"}`}
+              onClick={() => setShowEmoji((s) => !s)}
+              disabled={isSendingMessage || isRecording}
+            >
+              <Smile size={20} />
+            </button>
+          </div>
 
           {/* Voice note: toggles record / stop */}
-          <button
-            type="button"
-            className={`btn btn-circle ${isRecording ? "text-red-500" : "text-base-content/60"}`}
-            onClick={isRecording ? stopRecording : startRecording}
-            disabled={isSendingMessage}
-            title={isRecording ? "Stop recording" : "Record voice message"}
+          <div
+            className="tooltip tooltip-top"
+            data-tip={isRecording ? "Stop recording" : "Record voice message"}
           >
-            {isRecording ? <Square size={18} /> : <Mic size={20} />}
-          </button>
+            <button
+              type="button"
+              className={`btn btn-circle ${isRecording ? "text-red-500" : "text-base-content/60"}`}
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={isSendingMessage}
+            >
+              {isRecording ? <Square size={18} /> : <Mic size={20} />}
+            </button>
+          </div>
 
+          {/* One attachment button for images AND documents — visible on mobile too. */}
+          <div className="tooltip tooltip-top" data-tip="Attach image or file">
+            <button
+              type="button"
+              className={`btn btn-circle ${
+                imagePreview || (filePreview && !isAudioPreview)
+                  ? "text-emerald-500"
+                  : "text-base-content/60"
+              }`}
+              onClick={() => attachInputRef.current?.click()}
+              disabled={isSendingMessage || isRecording}
+            >
+              <Paperclip size={20} />
+            </button>
+          </div>
+        </div>
+        <div className="tooltip tooltip-top" data-tip="Send">
           <button
-            type="button"
-            className={`hidden sm:flex btn btn-circle ${imagePreview ? "text-emerald-500" : "text-base-content/60"}`}
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isSendingMessage || isRecording}
-            title="Attach image"
+            type="submit"
+            className="btn btn-sm btn-circle"
+            disabled={(!text.trim() && !imagePreview && !filePreview) || isSendingMessage || isRecording}
           >
-            <Image size={20} />
-          </button>
-          <button
-            type="button"
-            className={`hidden sm:flex btn btn-circle ${filePreview && !isAudioPreview ? "text-emerald-500" : "text-base-content/60"}`}
-            onClick={() => docInputRef.current?.click()}
-            disabled={isSendingMessage || isRecording}
-            title="Attach file"
-          >
-            <Paperclip size={20} />
+            <Send size={22} />
           </button>
         </div>
-        <button
-          type="submit"
-          className="btn btn-sm btn-circle"
-          disabled={(!text.trim() && !imagePreview && !filePreview) || isSendingMessage || isRecording}
-        >
-          <Send size={22} />
-        </button>
       </form>
     </div>
   );

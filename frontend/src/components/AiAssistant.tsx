@@ -81,13 +81,14 @@ const AiAssistant = () => {
 
   return (
     <div className="relative">
-      <button
-        onClick={() => (open ? closePanel() : setOpen(true))}
-        title="AI assistant"
-        className="btn btn-ghost btn-sm btn-circle"
-      >
-        <Sparkles className="size-5" />
-      </button>
+      <div className="tooltip tooltip-bottom" data-tip="AI assistant">
+        <button
+          onClick={() => (open ? closePanel() : setOpen(true))}
+          className="btn btn-ghost btn-sm btn-circle"
+        >
+          <Sparkles className="size-5" />
+        </button>
+      </div>
 
       {open && (
         <div className="absolute right-0 top-full mt-2 w-72 max-w-[90vw] z-30 bg-base-100 border border-base-300 rounded-xl shadow-lg p-3">

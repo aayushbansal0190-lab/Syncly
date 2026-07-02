@@ -38,29 +38,32 @@ const ChatHeader = ({ searchOpen, onToggleSearch }: ChatHeaderProps) => {
           {/* AI assistant: summarize the chat or draft a reply. */}
           <AiAssistant />
           {/* Start a video call. Disabled while a call is already in progress. */}
-          <button
-            onClick={() => startCall(selectedUser)}
-            disabled={callStatus !== "idle"}
-            title="Start video call"
-            className="btn btn-ghost btn-sm btn-circle"
-          >
-            <Video className="size-5" />
-          </button>
+          <div className="tooltip tooltip-bottom" data-tip="Start video call">
+            <button
+              onClick={() => startCall(selectedUser)}
+              disabled={callStatus !== "idle"}
+              className="btn btn-ghost btn-sm btn-circle"
+            >
+              <Video className="size-5" />
+            </button>
+          </div>
           {/* Toggle in-conversation search (highlighted while active). */}
-          <button
-            onClick={onToggleSearch}
-            title="Search messages"
-            className={`btn btn-ghost btn-sm btn-circle ${searchOpen ? "text-primary" : ""}`}
-          >
-            <Search className="size-5" />
-          </button>
-          <button
-            onClick={() => setSelectedUser(null)}
-            title="Close chat"
-            className="btn btn-ghost btn-sm btn-circle"
-          >
-            <X className="size-5" />
-          </button>
+          <div className="tooltip tooltip-bottom" data-tip="Search messages">
+            <button
+              onClick={onToggleSearch}
+              className={`btn btn-ghost btn-sm btn-circle ${searchOpen ? "text-primary" : ""}`}
+            >
+              <Search className="size-5" />
+            </button>
+          </div>
+          <div className="tooltip tooltip-bottom" data-tip="Close chat">
+            <button
+              onClick={() => setSelectedUser(null)}
+              className="btn btn-ghost btn-sm btn-circle"
+            >
+              <X className="size-5" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
