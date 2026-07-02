@@ -1,17 +1,13 @@
 name: Deploy Frontend (S3 + CloudFront)
 
-# After the one-time AWS setup (see DEPLOYMENT.md), pushing to main builds and
-# ships the site.
-#
-# Manual-only for now (workflow_dispatch) until the S3 bucket + GitHub secrets are
-# configured. Once AWS is set up, re-enable auto-deploy by uncommenting the push
-# trigger below.
+# Pushing to main (touching frontend/**) builds the site and ships it to
+# S3 + CloudFront. Can also be run manually from the Actions tab.
 on:
-  # push:
-  #   branches: [main]
-  #   paths:
-  #     - "frontend/**"
-  #     - ".github/workflows/deploy-frontend.yml"
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy-frontend.yml"
   workflow_dispatch: {} # also lets you trigger it manually from the Actions tab
 
 jobs:
@@ -33,11 +29,12 @@ jobs:
         run: npm ci
 
       - name: Build
-        # These are baked into the bundle at build time (that's why they're here
-        # and not on the server). They point the frontend at your EC2 backend.
+        # Same-origin setup: the frontend calls /api and connects the socket at /
+        # on the same CloudFront domain (CloudFront routes those to the backend),
+        # so these are relative paths baked into the bundle at build time.
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
-          VITE_SOCKET_URL: ${{ secrets.VITE_SOCKET_URL }}
+          VITE_API_URL: /api
+          VITE_SOCKET_URL: /
         run: npm run build
 
       - name: Configure AWS credentials
