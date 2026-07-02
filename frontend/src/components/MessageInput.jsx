@@ -12,16 +12,15 @@ const MessageInput = () => {
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
+
     if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
       return;
     }
 
-    console.log(file);
-
     const options = {
-      maxSizeMB: 0.001, // Target size is 2KB (2 / 1024 MB)
-      maxWidthOrHeight: 800, // Limit dimensions to 800px
+      maxSizeMB: 0.001, 
+      maxWidthOrHeight: 800,
       useWebWorker: true,
     };
 
@@ -86,7 +85,7 @@ const MessageInput = () => {
             type="text"
             className="w-full input input-bordered rounded-lg input-sm sm:input-md"
             placeholder={`${isSendingMessage? "Sending message..." : "Type a message..." }`}
-            value={text}
+            value={`${isSendingMessage? "Sending message..." : text }`}
             onChange={(e) => setText(e.target.value)}
           />
           <input

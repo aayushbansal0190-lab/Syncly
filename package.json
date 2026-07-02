@@ -2,9 +2,15 @@
   "name": "chat-app",
   "version": "1.0.0",
   "description": "",
+  "private": true,
   "main": "index.js",
   "scripts": {
-    "build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
+    "setup": "npm install --prefix backend && npm install --prefix frontend",
+    "dev": "node scripts/dev.mjs",
+    "backend": "cd backend && node node_modules/nodemon/bin/nodemon.js --watch src --ext js,mjs,cjs,json src/index.js",
+    "frontend": "node scripts/run-vite.mjs --host 127.0.0.1",
+    "build": "node scripts/run-vite.mjs build",
+    "lint": "node frontend/node_modules/eslint/bin/eslint.js -c frontend/eslint.config.js frontend/src",
     "start": "npm run start --prefix backend"
   },
   "keywords": [],

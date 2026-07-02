@@ -1,8 +1,14 @@
+import { fileURLToPath, URL } from "node:url";
 import daisyui from "daisyui";
 
 /** @type {import('tailwindcss').Config} */
+const frontendRoot = fileURLToPath(new URL(".", import.meta.url));
+
 export default {
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  content: [
+    `${frontendRoot}index.html`,
+    `${frontendRoot}src/**/*.{js,ts,jsx,tsx}`,
+  ],
   theme: {
     extend: {},
   },
