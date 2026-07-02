@@ -1,3 +1,30 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  /* Antialiasing makes Inter render with the crisp, thin strokes you see in
+     polished apps; without it text looks slightly heavier and rougher. */
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* A slim, minimal scrollbar. It uses DaisyUI's --bc (base-content) colour
+   variable at low opacity, so it automatically matches whatever theme is
+   active instead of being a hard-coded grey. */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--bc) / 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--bc) / 0.35);
+}

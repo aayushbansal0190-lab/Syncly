@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
-import { Eye, EyeOff, Loader2, Lock, Mail, MessageSquare, User } from "lucide-react";
+import { Eye, EyeOff, Loader2, Lock, Mail, MessageSquare, User, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import AuthImagePattern from "../components/AuthImagePattern";
@@ -11,10 +11,23 @@ const SignUpPage = () => {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
+    username: "",
     password: "",
   });
+  const [autoGenerateUsername, setAutoGenerateUsername] = useState(true);
 
   const { signup, isSigningUp } = useAuthStore();
+
+  const generateUsername = () => {
+    if (!formData.fullName.trim()) {
+      toast.error("Enter full name first");
+      return;
+    }
+    const baseName = formData.fullName.split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g, "");
+    const randomSuffix = Math.floor(Math.random() * 1000);
+    const generated = `${baseName}${randomSuffix}`;
+    setFormData({ ...formData, username: generated });
+  };
 
   const validateForm = () => {
     if (!formData.fullName.trim()) return toast.error("Full name is required");
@@ -22,16 +35,31 @@ const SignUpPage = () => {
     if (!/\S+@\S+\.\S+/.test(formData.email)) return toast.error("Invalid email format");
     if (!formData.password) return toast.error("Password is required");
     if (formData.password.length < 6) return toast.error("Password must be at least 6 characters");
+    if (formData.username && (formData.username.length < 3 || formData.username.length > 20)) {
+      return toast.error("Username must be 3-20 characters");
+    }
+    if (formData.username && !/^[a-z0-9_]+$/.test(formData.username)) {
+      return toast.error("Username can only contain letters, numbers, and underscores");
+    }
 
     return true;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     const success = validateForm();
 
-    if (success === true) signup(formData);
+    if (success === true) {
+      // If auto-generate is on and username is empty, generate one
+      const dataToSend = { ...formData };
+      if (!dataToSend.username) {
+        const baseName = dataToSend.fullName.split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g, "");
+        const randomSuffix = Math.floor(Math.random() * 1000);
+        dataToSend.username = `${baseName}${randomSuffix}`;
+      }
+      signup(dataToSend);
+    }
   };
 
   return (
@@ -70,6 +98,49 @@ const SignUpPage = () => {
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                 />
               </div>
+            </div>
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-medium">Username</span>
+                <span className="label-text-alt text-xs">
+                  {autoGenerateUsername ? "(auto-generated)" : "(optional)"}
+                </span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="size-5 text-base-content/40" />
+                </div>
+                <input
+                  type="text"
+                  className={`input input-bordered w-full pl-10 pr-10`}
+                  placeholder="johndoe123"
+                  value={formData.username}
+                  disabled={autoGenerateUsername}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "") })}
+                />
+                {autoGenerateUsername && (
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    onClick={generateUsername}
+                    title="Generate username"
+                  >
+                    <RefreshCw className="size-5 text-base-content/40 hover:text-primary" />
+                  </button>
+                )}
+              </div>
+              <label className="label">
+                <span className="label-text-alt">
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-sm mr-2"
+                    checked={autoGenerateUsername}
+                    onChange={(e) => setAutoGenerateUsername(e.target.checked)}
+                  />
+                  Auto-generate username
+                </span>
+              </label>
             </div>
 
             <div className="form-control">
@@ -119,7 +190,11 @@ const SignUpPage = () => {
               </div>
             </div>
 
-            <button type="submit" className="btn btn-primary w-full" disabled={isSigningUp}>
+            <button 
+              type="submit" 
+              className="btn btn-primary w-full" 
+              disabled={isSigningUp || !formData.fullName.trim() || !formData.email.trim() || !formData.password.trim()}
+            >
               {isSigningUp ? (
                 <>
                   <Loader2 className="size-5 animate-spin" />

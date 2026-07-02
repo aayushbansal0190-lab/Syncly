@@ -10,7 +10,15 @@ export default {
     `${frontendRoot}src/**/*.{js,ts,jsx,tsx}`,
   ],
   theme: {
-    extend: {},
+    extend: {
+      // Make Inter the default font everywhere. Tailwind's preflight applies
+      // `fontFamily.sans` to the whole page, so overriding it here means every
+      // element uses Inter without touching a single component. The fallbacks
+      // keep text readable if Inter hasn't finished loading yet.
+      fontFamily: {
+        sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+      },
+    },
   },
   plugins: [daisyui],
   daisyui: {
