@@ -1,4 +1,4 @@
-# Chat App
+# Syncly
 
 A real-time chat application built on the MERN stack with Socket.IO. It supports
 1-on-1 messaging, a friend system, read receipts, presence, voice notes, video
@@ -51,7 +51,7 @@ with MongoDB.
 
 ```bash
 git clone <your-repo-url>
-cd chat-app
+cd syncly
 npm run setup    # installs backend + frontend dependencies
 ```
 
@@ -95,7 +95,7 @@ Then open http://localhost:5173.
 ## Project structure
 
 ```
-chat-app/
+syncly/
 ├── backend/
 │   └── src/
 │       ├── controllers/   # auth, message, friend, ai
