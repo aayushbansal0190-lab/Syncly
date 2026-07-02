@@ -1,0 +1,45 @@
+# Render Blueprint: describes how to build & run this app as code, instead of
+# clicking settings in the Render dashboard. Commit this and Render can recreate
+# the whole service from scratch. Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web # a web service = something that listens for HTTP requests
+    name: chat-app
+    runtime: node
+    plan: free # the free tier; bump to a paid plan to avoid the cold-start sleep
+    region: oregon # pick the region closest to your users
+
+    # Build step: install backend + frontend deps, then build the React app into
+    # frontend/dist. The backend serves that dist folder in production.
+    buildCommand: npm run setup && npm run build
+
+    # Start step: launch the Express server (which also serves the built frontend).
+    startCommand: npm start
+
+    # Render pings this URL to check the app is alive. We already expose /health,
+    # which reports DB connectivity too. If it stops returning 200, Render knows
+    # the deploy is unhealthy.
+    healthCheckPath: /health
+
+    envVars:
+      # Tells the app to run in production mode (enables static file serving,
+      # trust proxy, and the 32-char TOKEN_SECRET check).
+      - key: NODE_ENV
+        value: production
+      # Pin Node to match "engines": ">=20.19.0" so Render builds on the same version.
+      - key: NODE_VERSION
+        value: 20.19.0
+      # Secrets: sync:false means Render will NOT read these from this file.
+      # You enter them once in the Render dashboard, so they never get committed
+      # to git. This is how you keep credentials out of version control.
+      - key: TOKEN_SECRET
+        sync: false
+      - key: CONNECTION_STRING # your MongoDB Atlas connection string
+        sync: false
+      - key: CLIENT_URL # your deployed URL, e.g. https://chat-app.onrender.com
+        sync: false
+      - key: CLOUD_NAME # Cloudinary
+        sync: false
+      - key: API_KEY # Cloudinary
+        sync: false
+      - key: API_SECRET # Cloudinary
+        sync: false

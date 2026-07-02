@@ -1,0 +1,64 @@
+# CI = Continuous Integration. This file tells GitHub: every time code is
+# pushed or a pull request is opened, run these checks automatically.
+# A green check means lint + tests + build all passed on a clean machine.
+name: CI
+
+# When should this run? On pushes to main, and on every pull request.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Job 1: install backend deps and run the test suite (Vitest).
+  # The tests mock the DB/Cloudinary/Socket.io, so no MongoDB is needed here.
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      # Pull your repo's code onto the CI machine.
+      - uses: actions/checkout@v4
+
+      # Install Node. We pin v20 to match "engines": ">=20.19.0" in package.json,
+      # so CI runs the same Node version you develop on.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm install
+
+      - name: Run backend tests
+        working-directory: backend
+        run: npm test
+
+  # Job 2: install frontend deps, lint, and make sure it actually builds.
+  # A passing build catches broken imports/JSX that lint alone can miss.
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm install
+
+      - name: Lint frontend
+        working-directory: frontend
+        run: npm run lint
+
+      # Type-check the whole TypeScript frontend (tsc --noEmit). Vite's build
+      # transpiles without checking types, so this is what actually fails CI on
+      # a type error.
+      - name: Type-check frontend
+        working-directory: frontend
+        run: npm run typecheck
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build

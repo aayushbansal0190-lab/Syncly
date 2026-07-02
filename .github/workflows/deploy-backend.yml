@@ -1,0 +1,36 @@
+name: Deploy Backend (EC2)
+
+# SSHes into your EC2 box, pulls the new code, installs deps, and restarts the
+# Node process under PM2. Requires the one-time EC2 setup in DEPLOYMENT.md.
+#
+# Manual-only for now (workflow_dispatch) until the EC2 host + GitHub secrets are
+# configured. Once AWS is set up, re-enable auto-deploy by uncommenting the push
+# trigger below.
+on:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - "backend/**"
+  #     - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            # Path where you cloned the repo on the EC2 box (adjust if different).
+            cd ~/fullstack-chat-app
+            git pull origin main
+            cd backend
+            npm ci --omit=dev
+            # Restart if already running, otherwise start it for the first time.
+            pm2 restart chat-backend || pm2 start src/index.js --name chat-backend
+            pm2 save
