@@ -2,7 +2,15 @@ import User from "../models/user.model.js";
 import Message from "../models/message.model.js";
 import cloudinary from "../lib/cloudinary.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
+import { SOCKET_EVENTS } from "../constants.js";
 
+/**
+ * Get all users except the logged-in user for sidebar display
+ * Requires authentication middleware
+ * @param {Object} req - Express request with authenticated user in req.user
+ * @param {Object} res - Response object
+ * @returns {void} Returns array of user objects (without passwords)
+ */
 export const getUsersForSidebar = async (req, res) => {
   try {
     const loggedInUserId = req.user._id;
@@ -15,6 +23,14 @@ export const getUsersForSidebar = async (req, res) => {
   }
 };
 
+/**
+ * Get all messages between logged-in user and another user
+ * Fetches both sent and received messages
+ * Requires authentication middleware
+ * @param {Object} req - Request params: { id: userToChatId }
+ * @param {Object} res - Response object
+ * @returns {void} Returns array of message objects sorted by timestamp
+ */
 export const getMessages = async (req, res) => {
   try {
     const { id: userToChatId } = req.params;
@@ -34,11 +50,23 @@ export const getMessages = async (req, res) => {
   }
 };
 
+/**
+ * Send a message to another user with optional image attachment
+ * Validates message content, uploads image if provided, emits real-time update via Socket.io
+ * Requires authentication middleware
+ * @param {Object} req - Request body: { text, image (base64) }, params: { id: receiverId }
+ * @param {Object} res - Response object
+ * @returns {void} Returns created message or error message
+ */
 export const sendMessage = async (req, res) => {
   try {
     const { text, image } = req.body;
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
+
+    if (!text?.trim() && !image) {
+      return res.status(400).json({ message: "Message must contain text or image" });
+    }
 
     let imageUrl;
     if (image) {
@@ -57,7 +85,7 @@ export const sendMessage = async (req, res) => {
 
     const receiverSocketId = getReceiverSocketId(receiverId);
     if (receiverSocketId) {
-      io.to(receiverSocketId).emit("newMessage", newMessage);
+      io.to(receiverSocketId).emit(SOCKET_EVENTS.NEW_MESSAGE, newMessage);
     }
 
     res.status(201).json(newMessage);

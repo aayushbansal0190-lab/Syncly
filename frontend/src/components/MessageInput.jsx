@@ -29,7 +29,6 @@ const MessageInput = () => {
     const reader = new FileReader();
     reader.onloadend = () => {
       setImagePreview(reader.result);
-      console.log(reader.result);
     };
     reader.readAsDataURL(compressedFile);
   };

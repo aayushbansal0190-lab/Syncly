@@ -1,10 +1,19 @@
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 import "../lib/env.js";
+import { COOKIE_NAME } from "../constants.js";
 
+/**
+ * Middleware to verify JWT token and protect routes from unauthorized access
+ * Extracts user from token and attaches to request object
+ * @param {Object} req - Express request object containing JWT cookie
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {void}
+ */
 export const protectRoute = async (req, res, next) => {
   try {
-    const token = req.cookies.jwt;
+    const token = req.cookies[COOKIE_NAME];
 
     if (!token) {
       return res.status(401).json({ message: "Unauthorized - No Token Provided" });

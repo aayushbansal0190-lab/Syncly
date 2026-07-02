@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { axiosInstance } from "../lib/axios.js";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
+import { SOCKET_EVENTS } from "../constants.js";
 
 export const useAuthStore = create((set, get) => ({
   authUser: null,
@@ -12,6 +13,10 @@ export const useAuthStore = create((set, get) => ({
   onlineUsers: [],
   socket: null,
 
+  /**
+   * Check if user is already authenticated on page load
+   * @returns {Promise<void>}
+   */
   checkAuth: async () => {
     try {
       const res = await axiosInstance.get("/auth/check");
@@ -26,6 +31,11 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  /**
+   * Handle user signup - Create new account and authenticate
+   * @param {Object} data - User data: { fullName, email, password }
+   * @returns {Promise<void>}
+   */
   signup: async (data) => {
     set({ isSigningUp: true });
     try {
@@ -40,6 +50,11 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  /**
+   * Handle user login - Authenticate with credentials
+   * @param {Object} data - Login data: { email, password }
+   * @returns {Promise<void>}
+   */
   login: async (data) => {
     set({ isLoggingIn: true });
     try {
@@ -55,6 +70,10 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  /**
+   * Handle user logout - Clear auth and disconnect socket
+   * @returns {Promise<void>}
+   */
   logout: async () => {
     try {
       await axiosInstance.post("/auth/logout");
@@ -66,6 +85,11 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  /**
+   * Update user profile picture
+   * @param {Object} data - Profile data: { profilePic (base64) }
+   * @returns {Promise<void>}
+   */
   updateProfile: async (data) => {
     set({ isUpdatingProfile: true });
     try {
@@ -80,6 +104,11 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  /**
+   * Establish Socket.io connection for real-time updates
+   * Listens for online users updates
+   * @returns {void}
+   */
   connectSocket: () => {
     const { authUser } = get();
     if (!authUser || get().socket?.connected) return;
@@ -94,11 +123,19 @@ export const useAuthStore = create((set, get) => ({
 
     set({ socket: socket });
 
-    socket.on("getOnlineUsers", (userIds) => {
+    socket.on(SOCKET_EVENTS.GET_ONLINE_USERS, (userIds) => {
       set({ onlineUsers: userIds });
     });
   },
+  /**
+   * Disconnect Socket.io connection and cleanup listeners
+   * Called on user logout
+   * @returns {void}
+   */
   disconnectSocket: () => {
-    if (get().socket?.connected) get().socket.disconnect();
+    if (get().socket?.connected) {
+      get().socket.off(SOCKET_EVENTS.GET_ONLINE_USERS);
+      get().socket.disconnect();
+    }
   },
 }));

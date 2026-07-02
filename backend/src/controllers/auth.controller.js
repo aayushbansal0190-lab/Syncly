@@ -2,7 +2,14 @@ import { generateToken } from "../lib/utils.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
+import { COOKIE_NAME } from "../constants.js";
 
+/**
+ * Handle user signup - Create new user account with hashed password
+ * @param {Object} req - Request body: { fullName, email, password }
+ * @param {Object} res - Response object returning user data or error
+ * @returns {void} Returns created user or error message
+ */
 export const signup = async (req, res) => {
   const { fullName, email, password } = req.body;
   try {
@@ -46,6 +53,12 @@ export const signup = async (req, res) => {
   }
 };
 
+/**
+ * Handle user login - Verify credentials and generate authentication token
+ * @param {Object} req - Request body: { email, password }
+ * @param {Object} res - Response object returning user data or error
+ * @returns {void} Returns authenticated user or error message
+ */
 export const login = async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -74,9 +87,15 @@ export const login = async (req, res) => {
   }
 };
 
+/**
+ * Handle user logout - Clear authentication cookie
+ * @param {Object} req - Express request object
+ * @param {Object} res - Response object
+ * @returns {void} Returns logout success message
+ */
 export const logout = (req, res) => {
   try {
-    res.cookie("jwt", "", { maxAge: 0 });
+    res.cookie(COOKIE_NAME, "", { maxAge: 0 });
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     console.log("Error in logout controller", error.message);
@@ -84,6 +103,13 @@ export const logout = (req, res) => {
   }
 };
 
+/**
+ * Update user profile picture - Upload new image to Cloudinary
+ * Requires authentication middleware
+ * @param {Object} req - Request body: { profilePic (base64) }, authenticated user in req.user
+ * @param {Object} res - Response object returning updated user
+ * @returns {void} Returns updated user or error message
+ */
 export const updateProfile = async (req, res) => {
   try {
     const { profilePic } = req.body;
@@ -107,6 +133,13 @@ export const updateProfile = async (req, res) => {
   }
 };
 
+/**
+ * Check if user is authenticated - Return authenticated user data
+ * Requires authentication middleware (protectRoute)
+ * @param {Object} req - Express request with authenticated user in req.user
+ * @param {Object} res - Response object
+ * @returns {void} Returns authenticated user data or error
+ */
 export const checkAuth = (req, res) => {
   try {
     res.status(200).json(req.user);

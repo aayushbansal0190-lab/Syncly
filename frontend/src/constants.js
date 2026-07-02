@@ -1,0 +1,41 @@
+// UI Theme Options (DaisyUI themes)
+export const THEMES = [
+  "light",
+  "dark",
+  "cupcake",
+  "bumblebee",
+  "emerald",
+  "corporate",
+  "synthwave",
+  "retro",
+  "cyberpunk",
+  "valentine",
+  "halloween",
+  "garden",
+  "forest",
+  "aqua",
+  "lofi",
+  "pastel",
+  "fantasy",
+  "wireframe",
+  "black",
+  "luxury",
+  "dracula",
+  "cmyk",
+  "autumn",
+  "business",
+  "acid",
+  "lemonade",
+  "night",
+  "coffee",
+  "winter",
+  "dim",
+  "nord",
+  "sunset",
+];
+
+// Socket Event Names
+export const SOCKET_EVENTS = {
+  GET_ONLINE_USERS: "getOnlineUsers",
+  NEW_MESSAGE: "newMessage",
+};

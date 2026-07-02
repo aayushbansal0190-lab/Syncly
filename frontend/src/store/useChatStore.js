@@ -2,6 +2,7 @@ import { create } from "zustand";
 import toast from "react-hot-toast";
 import { axiosInstance } from "../lib/axios";
 import { useAuthStore } from "./useAuthStore";
+import { SOCKET_EVENTS } from "../constants.js";
 
 export const useChatStore = create((set, get) => ({
   messages: [],
@@ -9,8 +10,13 @@ export const useChatStore = create((set, get) => ({
   selectedUser: null,
   isUsersLoading: false,
   isMessagesLoading: false,
-  isSendingMessage: false, 
+  isSendingMessage: false,
 
+  /**
+   * Fetch all available users for the sidebar
+   * Excludes the currently logged-in user
+   * @returns {Promise<void>}
+   */
   getUsers: async () => {
     set({ isUsersLoading: true });
     try {
@@ -23,6 +29,11 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
+  /**
+   * Fetch all messages between logged-in user and selected user
+   * @param {string} userId - The user ID to fetch messages with
+   * @returns {Promise<void>}
+   */
   getMessages: async (userId) => {
     set({ isMessagesLoading: true });
     try {
@@ -34,6 +45,11 @@ export const useChatStore = create((set, get) => ({
       set({ isMessagesLoading: false });
     }
   },
+  /**
+   * Send a message to the selected user
+   * @param {Object} messageData - Message content: { text, image }
+   * @returns {Promise<void>}
+   */
   sendMessage: async (messageData) => {
     set({isSendingMessage: true });
     const { selectedUser, messages } = get();
@@ -48,13 +64,18 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
+  /**
+   * Subscribe to new messages from selected user via Socket.io
+   * Listens for real-time message events
+   * @returns {void}
+   */
   subscribeToMessages: () => {
     const { selectedUser } = get();
     if (!selectedUser) return;
 
     const socket = useAuthStore.getState().socket;
 
-    socket.on("newMessage", (newMessage) => {
+    socket.on(SOCKET_EVENTS.NEW_MESSAGE, (newMessage) => {
       const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id;
       if (!isMessageSentFromSelectedUser) return;
 
@@ -64,10 +85,20 @@ export const useChatStore = create((set, get) => ({
     });
   },
 
+  /**
+   * Unsubscribe from message socket events
+   * Called when changing users or logging out
+   * @returns {void}
+   */
   unsubscribeFromMessages: () => {
     const socket = useAuthStore.getState().socket;
-    socket.off("newMessage");
+    socket.off(SOCKET_EVENTS.NEW_MESSAGE);
   },
 
+  /**
+   * Set the currently selected user for chatting
+   * @param {Object} selectedUser - User object to chat with
+   * @returns {void}
+   */
   setSelectedUser: (selectedUser) => set({ selectedUser }),
 }));
