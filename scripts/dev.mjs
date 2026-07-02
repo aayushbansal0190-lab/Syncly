@@ -47,6 +47,6 @@ run(
 run(
   "frontend",
   "node",
-  ["scripts/run-vite.mjs", "--host", "127.0.0.1"],
+  ["scripts/run-vite.mjs", "--host", "0.0.0.0"],
   process.cwd()
 );
