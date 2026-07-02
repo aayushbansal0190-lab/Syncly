@@ -1,6 +1,20 @@
 import jwt from "jsonwebtoken";
 import "./env.js";
 import { COOKIE_NAME } from "../constants.js";
+import { isProduction } from "./env.js";
+
+export const getAuthCookieOptions = () => ({
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  httpOnly: true,
+  sameSite: isProduction ? "none" : "lax",
+  secure: isProduction,
+  path: "/",
+});
+
+export const getClearAuthCookieOptions = () => {
+  const { maxAge, ...options } = getAuthCookieOptions();
+  return options;
+};
 
 /**
  * Generate a JWT authentication token and set it as an HTTP-only cookie
@@ -13,12 +27,7 @@ export const generateToken = (userId, res) => {
     expiresIn: "7d",
   });
 
-  res.cookie(COOKIE_NAME, token, {
-    maxAge: 7 * 24 * 60 * 60 * 1000, // MS
-    httpOnly: true, // prevent XSS attacks cross-site scripting attacks
-    sameSite: "strict", // CSRF attacks cross-site request forgery attacks
-    secure: process.env.NODE_ENV === "production",
-  });
+  res.cookie(COOKIE_NAME, token, getAuthCookieOptions());
 
   return token;
 };

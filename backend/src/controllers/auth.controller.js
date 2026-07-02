@@ -1,17 +1,34 @@
-import { generateToken } from "../lib/utils.js";
+import { generateToken, getClearAuthCookieOptions } from "../lib/utils.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
 import { COOKIE_NAME } from "../constants.js";
+import { generateUniqueUsername } from "../lib/username.js";
 
 /**
- * Handle user signup - Create new user account with hashed password
- * @param {Object} req - Request body: { fullName, email, password }
+ * Derive a Cloudinary public_id from a stored secure_url so we can delete the
+ * asset later. Returns null for non-Cloudinary URLs (e.g. the empty default or
+ * an external seed avatar), which the caller treats as "nothing to delete".
+ * Example: .../upload/v1700/chat-app/profiles/abc.jpg -> chat-app/profiles/abc
+ * @param {string} url - a Cloudinary secure_url
+ * @returns {string|null} the public_id, or null if it can't be derived
+ */
+const getCloudinaryPublicId = (url) => {
+  if (typeof url !== "string" || !url.includes("/upload/")) return null;
+  const afterUpload = url.split("/upload/")[1];
+  const withoutVersion = afterUpload.replace(/^v\d+\//, "");
+  const withoutExtension = withoutVersion.replace(/\.[^/.]+$/, "");
+  return withoutExtension || null;
+};
+
+/**
+ * Handle user signup - Create new user account with hashed password and unique username
+ * @param {Object} req - Request body: { fullName, email, password, username? }
  * @param {Object} res - Response object returning user data or error
  * @returns {void} Returns created user or error message
  */
 export const signup = async (req, res) => {
-  const { fullName, email, password } = req.body;
+  const { fullName, email, password, username: requestedUsername } = req.body;
   try {
     if (!fullName || !email || !password) {
       return res.status(400).json({ message: "All fields are required" });
@@ -25,12 +42,38 @@ export const signup = async (req, res) => {
 
     if (user) return res.status(400).json({ message: "Email already exists" });
 
+    // Handle username: use provided or auto-generate
+    let username = requestedUsername?.toLowerCase().trim();
+    
+    if (username) {
+      // Validate requested username
+      if (username.length < 3 || username.length > 20) {
+        return res.status(400).json({ message: "Username must be 3-20 characters" });
+      }
+      if (!/^[a-z0-9_]+$/.test(username)) {
+        return res.status(400).json({ message: "Username can only contain letters, numbers, and underscores" });
+      }
+      
+      // Check if username is already taken
+      const existingUsername = await User.findOne({ username });
+      if (existingUsername) {
+        return res.status(400).json({ message: "Username already taken" });
+      }
+    } else {
+      // Auto-generate username from fullName
+      username = await generateUniqueUsername(fullName, async (un) => {
+        const existing = await User.findOne({ username: un });
+        return !!existing;
+      });
+    }
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = new User({
       fullName,
       email,
+      username,
       password: hashedPassword,
     });
 
@@ -42,6 +85,7 @@ export const signup = async (req, res) => {
         _id: newUser._id,
         fullName: newUser.fullName,
         email: newUser.email,
+        username: newUser.username,
         profilePic: newUser.profilePic,
       });
     } else {
@@ -49,6 +93,11 @@ export const signup = async (req, res) => {
     }
   } catch (error) {
     console.log("Error in signup controller", error.message);
+    if (error.code === 11000) {
+      // Duplicate key error
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({ message: `${field} already exists` });
+    }
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -79,6 +128,7 @@ export const login = async (req, res) => {
       _id: user._id,
       fullName: user.fullName,
       email: user.email,
+      username: user.username,
       profilePic: user.profilePic,
     });
   } catch (error) {
@@ -95,7 +145,7 @@ export const login = async (req, res) => {
  */
 export const logout = (req, res) => {
   try {
-    res.cookie(COOKIE_NAME, "", { maxAge: 0 });
+    res.clearCookie(COOKIE_NAME, getClearAuthCookieOptions());
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     console.log("Error in logout controller", error.message);
@@ -119,7 +169,15 @@ export const updateProfile = async (req, res) => {
       return res.status(400).json({ message: "Profile pic is required" });
     }
 
-    const uploadResponse = await cloudinary.uploader.upload(profilePic);
+    if (typeof profilePic !== "string" || !profilePic.startsWith("data:image/")) {
+      return res.status(400).json({ message: "Profile pic must be a valid image data URL" });
+    }
+
+    const uploadResponse = await cloudinary.uploader.upload(profilePic, {
+      folder: "chat-app/profiles",
+      resource_type: "image",
+    });
+    const previousPublicId = getCloudinaryPublicId(req.user.profilePic);
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { profilePic: uploadResponse.secure_url },
@@ -127,6 +185,14 @@ export const updateProfile = async (req, res) => {
     );
 
     res.status(200).json(updatedUser);
+
+    // Best-effort cleanup of the old avatar so we don't leak Cloudinary storage.
+    // Done after responding (the user doesn't need to wait) and never throws.
+    if (previousPublicId) {
+      cloudinary.uploader
+        .destroy(previousPublicId)
+        .catch((err) => console.log("Failed to delete old profile pic:", err.message));
+    }
   } catch (error) {
     console.log("error in update profile:", error);
     res.status(500).json({ message: "Internal server error" });
