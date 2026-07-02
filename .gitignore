@@ -24,3 +24,14 @@ dist-ssr
 *.sw?
 
 .env
+.env.local
+.env.*.local
+
+# Test coverage (Vitest)
+coverage
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# SSH / deploy keys (e.g. the EC2 .pem) — never commit these
+*.pem
