@@ -7,10 +7,10 @@ interface ThemeStore {
 }
 
 export const useThemeStore = create<ThemeStore>((set) => ({
-  // Default to "nord": a clean, muted blue-grey palette suited to a modern,
-  // minimal UI. Users can still switch to any theme; their choice is remembered
+  // Default to "cupcake": a soft, light pastel palette shown to first-time
+  // visitors. Users can still switch to any theme; their choice is remembered
   // in localStorage and takes precedence over this default.
-  theme: (localStorage.getItem("chat-theme") as Theme) || "nord",
+  theme: (localStorage.getItem("chat-theme") as Theme) || "cupcake",
   setTheme: (theme) => {
     localStorage.setItem("chat-theme", theme);
     set({ theme });
