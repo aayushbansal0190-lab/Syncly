@@ -26,7 +26,10 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        # Use npm install (not npm ci) to match CI: the committed lock file omits
+        # platform-specific native binaries, which makes npm ci fail on the Linux
+        # runner. npm install resolves the right binaries for the runner.
+        run: npm install
 
       - name: Build
         # Same-origin setup: the frontend calls /api and connects the socket at /
